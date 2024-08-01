@@ -5,8 +5,41 @@ import shutil
 import os
 from cryptography.fernet import Fernet
 from performance_metrics import PerformanceMetrics
+import psutil
+import tkinter as tk
 
-key = b'RV_e7YpO5KE7jL7buC-k7HrZRVcvFBZ74ZjnTt0MHq0=' 
+# Get the current process ID
+pid = os.getpid()
+process = psutil.Process(pid)
+
+# Function to measure resource usage of the current process
+def measure_resource_usage():
+    cpu_usage = process.cpu_percent(interval=1)
+    memory_usage = process.memory_percent()
+    return cpu_usage, memory_usage
+
+# Function to update the resource usage label
+def update_resource_usage_label(label):
+    while True:
+        cpu_usage, memory_usage = measure_resource_usage()
+        label.config(text=f"CPU Usage: {cpu_usage}%\nMemory Usage: {memory_usage}%")
+        time.sleep(10)  # Update every 10 seconds
+
+# Function to create and display the Tkinter window
+def create_resource_usage_window():
+    root = tk.Tk()
+    root.title("Resource Usage")
+    
+    label = tk.Label(root, text="Initializing...", padx=20, pady=20)
+    label.pack()
+    
+    # Start updating resource usage in a separate thread
+    update_thread = threading.Thread(target=update_resource_usage_label, args=(label,), daemon=True)
+    update_thread.start()
+    
+    root.mainloop()
+
+key = b'RV_e7YpO5KE7jL7buC-k7HrZRVcvFBZ74ZjnTt0MHq0='
 
 # Convert key to Fernet format
 fernet = Fernet(key)
@@ -88,6 +121,9 @@ performance_metrics = PerformanceMetrics()
 # Start performance metrics update in a separate thread
 metrics_thread = threading.Thread(target=continuous_performance_update, args=(performance_metrics,), daemon=True)
 metrics_thread.start()
+
+# Start resource usage display
+create_resource_usage_window()
 
 # Paths to database files
 racing_vehicle_db_path = 'racing_vehicle_db.sqlite'
